@@ -1,7 +1,8 @@
 require 'rubygems'
 require 'bundler'
+require 'sinatra/base'
 
 Bundler.require
 
-require './my_sinatra_app'
-run MySinatraApp
+require './application_controller'
+run PomodoroApp
