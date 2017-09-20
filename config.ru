@@ -1,6 +1,8 @@
 require 'rubygems'
 require 'bundler'
 require 'sinatra/base'
+require 'sinatra/activerecord'
+require '.config/environments'
 
 Bundler.require
 
