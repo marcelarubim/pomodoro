@@ -4,5 +4,7 @@ require 'sinatra/base'
 
 Bundler.require
 
-require './application_controller'
-run PomodoroApp
+Dir.glob('./{models,controllers}/*.rb').each { |file| require file }
+
+# require '.controllers/'
+run ApplicationController
