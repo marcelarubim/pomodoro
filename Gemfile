@@ -7,6 +7,7 @@ gem 'sinatra'
 gem 'activerecord'
 gem 'dotenv'
 gem 'pg', group: :production
+gem 'rake'
 gem 'sinatra-activerecord'
 gem 'sinatra-reloader'
 
