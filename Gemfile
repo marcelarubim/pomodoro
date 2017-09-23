@@ -13,4 +13,5 @@ gem 'sinatra-reloader'
 
 group :development, :test do
   gem 'sqlite3'
+  gem 'tux'
 end

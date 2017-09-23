@@ -1,7 +1,5 @@
 default: &default
   adapter: sqlite3
-  pool: 5
-  timeout: 5000
   encoding: unicode
   host: localhost
 
@@ -20,5 +18,5 @@ production:
   host: localhost
   pool: 5
   timeout: 5000
-  username: <%= ENV['PG_USER'] %>,
+  username: <%= ENV['PG_USER'] %>
   password: <%= ENV['PG_PASS'] %>

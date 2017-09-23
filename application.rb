@@ -4,7 +4,7 @@ require 'sinatra/reloader'
 require './config/environments'
 require 'dotenv'
 require 'json'
-
+require './models/user'
 before do
   content_type :json
 end
@@ -17,10 +17,7 @@ configure :production, :development do
   enable :logging
 end
 
-# nodoc #
-module Models
-  autoload :User, 'app/models/user'
-end
 get '/' do
+  users = User.all
   'Hello World'
 end
