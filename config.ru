@@ -1,12 +1,11 @@
+ENV['RACK_ENV'] ||= 'development'
+
 require 'rubygems'
 require 'bundler'
-require 'sinatra/base'
-require 'sinatra/activerecord'
-require '.config/environments'
 
 Bundler.require
 
-Dir.glob('./{models,controllers}/*.rb').each { |file| require file }
+# Dir.glob('./app/{models,controllers}/*.rb').each { |file| require file }
+require './application'
 
-# require '.controllers/'
-run ApplicationController
+run Sinatra::Application
