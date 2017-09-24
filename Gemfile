@@ -8,6 +8,7 @@ gem 'activerecord'
 gem 'bcrypt'
 gem 'dotenv'
 gem 'json'
+gem 'jwt'
 gem 'pg', group: :production
 gem 'rake'
 gem 'sinatra-activerecord'

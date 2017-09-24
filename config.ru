@@ -8,4 +8,7 @@ Bundler.require
 # Dir.glob('./app/{models,controllers}/*.rb').each { |file| require file }
 require './application'
 
-run Sinatra::Application
+run Rack::URLMap.new(
+  '/' => Public,
+  '/api' => Api
+)
