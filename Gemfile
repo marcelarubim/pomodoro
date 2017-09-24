@@ -5,7 +5,9 @@ ruby '2.4.0'
 gem 'sinatra'
 
 gem 'activerecord'
+gem 'bcrypt'
 gem 'dotenv'
+gem 'json'
 gem 'pg', group: :production
 gem 'rake'
 gem 'sinatra-activerecord'

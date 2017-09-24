@@ -1,1 +1,5 @@
-User.create(name: 'Name', email: 'email@email.com', password: '12345')
+User.create(
+  username: 'user',
+  email: 'email@email.com',
+  password_hash: BCrypt::Password.create('password')
+)
