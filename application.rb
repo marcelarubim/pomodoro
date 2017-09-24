@@ -84,6 +84,10 @@ class Public < Sinatra::Base
     end
   end
 
+  get '/' do
+    { message: 'Tomato Api' }.to_json
+  end
+
   post '/signin' do
     @user = User.new(email: @request_payload[:email],
                      password: @request_payload[:password],
