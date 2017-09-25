@@ -1,5 +1,5 @@
 # Tomato Timer Api
-API to store users and Pomodoro sessions
+API using Sinatra to store users and Pomodoro sessions
 
 ## [loading]
 
