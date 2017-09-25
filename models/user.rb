@@ -7,9 +7,9 @@ class User < ActiveRecord::Base
   validates_presence_of :email, :username, :password_hash
   enum role: [:admin, :free, :premium]
 
-  def initialize(arg = {})
+  def initialize(args = {})
     super
-    self.role ||= 'free'
+    self.role = args[:role] || 'free'
   end
 
   def password
@@ -21,12 +21,12 @@ class User < ActiveRecord::Base
   end
 
   def role_authorization
-    if self.role == User.roles('admin')
+    if self.role == 'admin'
       ['admin']
-    elsif self.role == User.roles('free')
-      %w(view_session add_session)
-    elsif self.role == User.roles('premium')
-      %w(view_session add_session view_stats)
+    elsif self.role == 'free'
+      ['view_session', 'add_session']
+    elsif self.role == 'premium'
+      ['view_session', 'add_session', 'view_stats']
     end
   end
 end

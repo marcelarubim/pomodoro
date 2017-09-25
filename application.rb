@@ -12,10 +12,17 @@ class JwtAuth
   end
 
   def response(code, msg)
-    respond_to do |format|
-      format.html { [code, { 'Content-Type' => 'text/plain' }, [msg]] }
-      format.json { render json: { message: msg }, status: code }
+    request&.accept&.each do |type|
+      case type.to_s
+      when 'text/html'
+        halt [code, msg]
+      when 'text/json'
+        { message: msg, status: code }.to_json
+      when 'text/plain'
+        halt [code, { 'Content-Type' => 'text/plain' }, [msg]]
+      end
     end
+    # error 406
   end
 
   def call(env)
@@ -27,13 +34,15 @@ class JwtAuth
     env[:user] = payload['user']
     @app.call env
   rescue JWT::DecodeError
-    response(401, 'A token must be passed.')
+    [401, { 'Content-Type' => 'text/plain' }, ['A token must be passed.']]
   rescue JWT::ExpiredSignature
-    response(403, 'The token has expired.')
+    [403, { 'Content-Type' => 'text/plain' }, ['The token has expired.']]
   rescue JWT::InvalidIssuerError
-    response(403, 'The token does not have a valid issuer.')
+    [403, { 'Content-Type' => 'text/plain' },
+     ['The token does not have a valid issuer.']]
   rescue JWT::InvalidIatError
-    response(403, 'The token does not have a valid "issued at" time.')
+    [403, { 'Content-Type' => 'text/plain' },
+     ['The token does not have a valid "issued at" time.']]
   end
 end
 
@@ -45,23 +54,21 @@ class Api < Sinatra::Base
 
   use JwtAuth
 
-  get '/protected' do
-    process_request request, 'view_session' do |req|
+  get '/user/:username' do
+    process_request request, 'view_session', params['username'] do |req|
       { user: @user.username, message: 'get' }.to_json
     end
   end
 
-  post '/protected' do
-    process_request request, 'add_session' do |req|
+  post '/user/:username' do
+    process_request request, 'add_session', params['username'] do |req|
       { user: @user.username, message: 'post' }.to_json
     end
   end
 
-  def process_request(req, scope)
+  def process_request(req, scope, username)
     scopes, user = request.env.values_at :scopes, :user
-    username = user['username'].to_sym
-    @user = User.find_by(username: username) if username
-
+    @user = User.find_by(username: username) if user['username'] == username
     if (scopes.include?(scope) || scopes.include?('admin')) && @user
       yield req
     else
@@ -93,8 +100,9 @@ class Public < Sinatra::Base
 
   post '/signin' do
     @user = User.new(email: @request_payload[:email],
-                     password: @request_payload[:password],
-                     username: @request_payload[:username])
+                     username: @request_payload[:username],
+                     password: @request_payload[:password])
+                     # role: @request_payload[:role])
     if @user.save
       { message: 'User created',
         token: token(@user.username, @user.role_authorization) }.to_json
@@ -112,7 +120,7 @@ class Public < Sinatra::Base
       exp: Time.now.to_i + 60 * 60,
       iat: Time.now.to_i,
       iss: ENV['JWT_ISSUER'],
-      scopes: scopes, #['view_session', 'add_session', 'view_stats']
+      scopes: scopes, # ['view_session', 'add_session', 'view_stats']
       user: { username: username }
     }
   end
