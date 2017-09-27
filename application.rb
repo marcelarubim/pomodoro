@@ -4,6 +4,7 @@ require 'sinatra/reloader'
 require 'dotenv'
 require './config/environments'
 require './models/user'
+require './models/session'
 # require './helper'
 
 class JwtAuth
@@ -54,15 +55,34 @@ class Api < Sinatra::Base
 
   use JwtAuth
 
+  before do
+    begin
+      if request.body.read(1)
+        request.body.rewind
+        @request_body = JSON.parse request.body.read, symbolize_names: true
+      end
+    rescue JSON::ParserError => e
+      request.body.rewind
+    end
+  end
+
   get '/user/:username' do
     process_request request, 'view_session', params['username'] do |req|
       { user: @user.username, message: 'get' }.to_json
     end
   end
 
-  post '/user/:username' do
+  post '/user/:username/sessions/new' do
     process_request request, 'add_session', params['username'] do |req|
-      { user: @user.username, message: 'post' }.to_json
+      new_session = Session.new(title: @request_body[:title],
+                                start: @request_body[:start],
+                                final: @request_body[:final])
+      @user.sessions << new_session
+      if @user.save
+        { user: @user.username, message: 'post' }.to_json
+      else
+        halt 401
+      end
     end
   end
 

@@ -6,6 +6,7 @@ class User < ActiveRecord::Base
   validates_uniqueness_of :email, :username
   validates_presence_of :email, :username, :password_hash
   enum role: [:admin, :free, :premium]
+  has_many :sessions
 
   def initialize(args = {})
     super
@@ -21,11 +22,11 @@ class User < ActiveRecord::Base
   end
 
   def role_authorization
-    if self.role == 'admin'
+    if role == 'admin'
       ['admin']
-    elsif self.role == 'free'
+    elsif role == 'free'
       ['view_session', 'add_session']
-    elsif self.role == 'premium'
+    elsif role == 'premium'
       ['view_session', 'add_session', 'view_stats']
     end
   end
