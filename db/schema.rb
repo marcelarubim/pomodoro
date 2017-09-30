@@ -14,8 +14,8 @@ ActiveRecord::Schema.define(version: 20170927180239) do
 
   create_table "sessions", force: :cascade do |t|
     t.string "title"
-    t.datetime "start"
-    t.datetime "final"
+    t.time "start"
+    t.time "final"
     t.integer "user_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
