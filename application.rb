@@ -79,7 +79,7 @@ class Api < Sinatra::Base
       if @user.save
         { user: @user.username, message: 'post' }.to_json
       else
-        halt 401
+        halt 401, new_session.errors.full_messages
       end
     end
   end
