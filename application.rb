@@ -129,6 +129,16 @@ class Public < Sinatra::Base
     end
   end
 
+  post '/login' do
+    @user = User.find_by(username: @request_payload[:username])
+    if @user.password == @request_payload[:password]
+      { message: 'User logged in',
+        token: token(@user.username, @user.role_authorization) }.to_json
+    else
+      halt 401
+    end
+  end
+
   def token(username, scopes)
     JWT.encode payload(username, scopes), ENV['JWT_SECRET'], 'HS256'
   end
@@ -143,6 +153,4 @@ class Public < Sinatra::Base
     }
   end
 
-  post '/signup' do
-  end
 end
