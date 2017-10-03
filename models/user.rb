@@ -3,10 +3,19 @@ require 'bcrypt'
 # .nodoc. #
 class User < ActiveRecord::Base
   include BCrypt
-  validates_uniqueness_of :email, :username
+  validates_uniqueness_of :email, :username, case_sensitive: false
   validates_presence_of :email, :username, :password_hash
-  enum role: [:admin, :free, :premium]
+  enum role: %w[admin free premium]
   has_many :sessions
+
+  before_validation do
+    self.username ||= email
+  end
+
+  before_save do
+    email.downcase!
+    username.downcase!
+  end
 
   def initialize(args = {})
     super
@@ -25,9 +34,9 @@ class User < ActiveRecord::Base
     if role == 'admin'
       ['admin']
     elsif role == 'free'
-      ['view_session', 'add_session']
+      %w[view_session add_session]
     elsif role == 'premium'
-      ['view_session', 'add_session', 'view_stats']
+      %w[view_session add_session view_stats]
     end
   end
 end
