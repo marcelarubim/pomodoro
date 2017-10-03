@@ -116,7 +116,7 @@ class Public < Sinatra::Base
     { message: 'Tomato Api' }.to_json
   end
 
-  post '/signin' do
+  post '/register' do
     @user = User.new(email: @request_payload[:email],
                      username: @request_payload[:username],
                      password: @request_payload[:password])
@@ -129,7 +129,7 @@ class Public < Sinatra::Base
     end
   end
 
-  post '/login' do
+  post '/signin' do
     @user = User.find_by(username: @request_payload[:username])
     if @user.password == @request_payload[:password]
       { message: 'User logged in',
