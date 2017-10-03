@@ -132,10 +132,10 @@ class Public < Sinatra::Base
   post '/signin' do
     @user = User.find_by(username: @request_payload[:username])
     if @user.password == @request_payload[:password]
-      { message: 'User logged in',
-        token: token(@user.username, @user.role_authorization) }.to_json
+      halt 200, { token: token(@user.username, @user.role_authorization),
+                  message: 'User signed in' }.to_json
     else
-      halt 401
+      halt 401, { message: 'Username/password don\'t match' }.to_json
     end
   end
 
@@ -152,5 +152,4 @@ class Public < Sinatra::Base
       user: { username: username }
     }
   end
-
 end
