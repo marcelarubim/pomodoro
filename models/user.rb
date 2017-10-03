@@ -3,11 +3,15 @@ require 'bcrypt'
 # .nodoc. #
 class User < ActiveRecord::Base
   include BCrypt
+
+  attr_accessor :password
+
   validates_uniqueness_of :email, :username, case_sensitive: false
-  validates_presence_of :email, :username, :password_hash
+  validates_presence_of :email, :username, :password
   validates :username, length: { minimum: 3 }
   validate :validate_email
   validate :validate_username
+  validates :password, length: { in: 6..20 }
   enum role: %w[admin free premium]
   has_many :sessions
 
@@ -18,19 +22,18 @@ class User < ActiveRecord::Base
   before_save do
     email.downcase!
     username.downcase!
+    encrypt_password
   end
+
+  after_save { self.password = nil }
 
   def initialize(args = {})
     super
     self.role = args[:role] || 'free'
   end
 
-  def password
-    @password ||= BCrypt::Password.new(password_hash)
-  end
-
-  def password=(new_password)
-    self.password_hash = BCrypt::Password.create(new_password)
+  def hash
+    BCrypt::Password.new(password_hash)
   end
 
   def role_authorization
@@ -53,5 +56,10 @@ class User < ActiveRecord::Base
   def validate_username
     return if username =~ /\A\w+\z/ || username == email
     errors[:username] << 'invalid characteres'
+  end
+
+  def encrypt_password
+    return unless password.present?
+    self.password_hash = BCrypt::Password.create(password)
   end
 end

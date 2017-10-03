@@ -130,12 +130,12 @@ class Public < Sinatra::Base
   end
 
   post '/signin' do
-    @user = if @request_payload[:login]&.include? "@"
+    @user = if @request_payload[:login]&.include? '@'
               User.find_by(email: @request_payload[:login])
             else
               User.find_by(username: @request_payload[:login])
             end
-    if @user.password == @request_payload[:password]
+    if @user.hash == @request_payload[:password]
       halt 200, { token: token(@user.username, @user.role_authorization),
                   message: 'User signed in' }.to_json
     else
