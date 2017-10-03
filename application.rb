@@ -130,12 +130,16 @@ class Public < Sinatra::Base
   end
 
   post '/signin' do
-    @user = User.find_by(username: @request_payload[:username])
+    @user = if @request_payload[:login]&.include? "@"
+              User.find_by(email: @request_payload[:login])
+            else
+              User.find_by(username: @request_payload[:login])
+            end
     if @user.password == @request_payload[:password]
       halt 200, { token: token(@user.username, @user.role_authorization),
                   message: 'User signed in' }.to_json
     else
-      halt 401, { message: 'Username/password don\'t match' }.to_json
+      halt 401, { message: 'Login credentials are not valid' }.to_json
     end
   end
 
