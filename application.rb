@@ -93,9 +93,10 @@ class Api < Sinatra::Base
   end
 
   def process_request(req, scope, username)
-    scopes, user = request.env.values_at :scopes, :user
-    @user = User.find_by(username: username) if user['username'] == username
-    if (scopes.include?(scope) || scopes.include?('admin')) && @user
+    scopes, user_id = request.env.values_at :scopes, :user_id
+    @user = User.find_by(username: username)
+    if (scopes.include?(scope) || scopes.include?('admin')) &&
+       @user&.id == user_id
       yield req
     else
       halt 403
@@ -133,7 +134,7 @@ class Public < Sinatra::Base
       { message: 'User created',
         token: token(@user.username, @user.role_authorization) }.to_json
     else
-      halt 401
+      halt 401, { error: @user.errors.full_messages }.to_json
     end
   end
 
@@ -144,24 +145,25 @@ class Public < Sinatra::Base
               User.find_by(username: @request_payload[:login])
             end
     if @user.hash == @request_payload[:password]
-      halt 200, { token: token(@user.username, @user.role_authorization),
+      halt 200, { token: token(@user.id, @user.role_authorization),
                   message: 'User signed in' }.to_json
     else
-      halt 401, { message: 'Login credentials are not valid' }.to_json
+      halt 401, { error: 'Login credentials are not valid' }.to_json
     end
   end
 
-  def token(username, scopes)
-    JWT.encode payload(username, scopes), ENV['JWT_SECRET'], 'HS256'
+  def token(user_id, scopes)
+    JWT.encode access_payload(user_id, scopes), ENV['JWT_SECRET'], 'HS256'
   end
 
-  def payload(username, scopes)
+  def access_payload(user_id, scopes)
     {
       exp: Time.now.to_i + 60 * 60,
       iat: Time.now.to_i,
       iss: ENV['JWT_ISSUER'],
+      aud: request.url.gsub(request.fullpath, ''),
       scopes: scopes, # ['view_session', 'add_session', 'view_stats']
-      user: { username: username }
+      user_id: user_id
     }
   end
 end
