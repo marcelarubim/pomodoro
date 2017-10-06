@@ -6,51 +6,35 @@ require './config/environments'
 require './models/user'
 require './models/session'
 
+module ApiError
+  JWT_EXCEPTIONS = [
+    JWT::DecodeError, JWT::ExpiredSignature, JWT::ImmatureSignature,
+    JWT::IncorrectAlgorithm, JWT::InvalidAudError, JWT::InvalidIatError,
+    JWT::InvalidIssuerError, JWT::InvalidJtiError, JWT::InvalidSubError,
+    JWT::VerificationError
+  ].freeze
+end
+
 class JwtAuth
   def initialize(app)
     @app = app
   end
 
-  def response(code, msg)
-    request&.accept&.each do |type|
-      case type.to_s
-      when 'text/html'
-        halt [code, msg]
-      when 'text/json'
-        { message: msg, status: code }.to_json
-      when 'text/plain'
-        halt [code, { 'Content-Type' => 'text/plain' }, [msg]]
-      end
-    end
-    # error 406
+  def call(env)
+    payload, _header = decode_token(env)
+    %i[scopes user_id].each { |k| env[k] = payload[k.to_s] }
+    @app.call env
+  rescue *ApiError::JWT_EXCEPTIONS => e
+    [403, { 'Content-Type' => 'application/json' },
+     [{ error: e.class.to_s, message: e.message }.to_json]]
   end
 
-  def call(env)
-    options = {
-      algorithm: 'HS256',
-      iss: ENV['JWT_ISSUER'],
-      aud: ENV['JWT_AUDIENCE']
-    }
+  def decode_token(env)
+    options = { algorithm: 'HS256',
+                iss: ENV['JWT_ISSUER'],
+                aud: ENV['JWT_AUDIENCE'] }
     bearer = env.fetch('HTTP_AUTHORIZATION', '').slice(7..-1)
-    payload, header = JWT.decode bearer, ENV['JWT_SECRET'], true, options
-    env[:scopes] = payload['scopes']
-    env[:user_id] = payload['user_id']
-    @app.call env
-  rescue JWT::ExpiredSignature => e
-    [403, { 'Content-Type' => 'application/json' },
-     [{ error: e.class.to_s, message: e.message }.to_json]]
-  rescue JWT::InvalidIssuerError => e
-    [403, { 'Content-Type' => 'application/json' },
-     [{ error: e.class.to_s, message: e.message }.to_json]]
-  rescue JWT::InvalidIatError => e
-    [403, { 'Content-Type' => 'application/json' },
-     [{ error: e.class.to_s, message: e.message }.to_json]]
-  rescue JWT::InvalidAudError => e
-    [403, { 'Content-Type' => 'application/json' },
-     [{ error: e.class.to_s, message: e.message }.to_json]]
-  rescue JWT::DecodeError => e
-    [401, { 'Content-Type' => 'application/json' },
-     [{ error: e.class.to_s, message: e.message }.to_json]]
+    JWT.decode bearer, ENV['JWT_SECRET'], true, options
   end
 end
 
@@ -69,6 +53,8 @@ class Api < Sinatra::Base
       end
     rescue JSON::ParserError => e
       request.body.rewind
+      [401, { 'Content-Type' => 'application/json' },
+       [{ error: e.class.to_s, message: e.message }.to_json]]
     end
   end
 
