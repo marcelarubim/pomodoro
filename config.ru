@@ -10,5 +10,5 @@ require './application'
 
 run Rack::URLMap.new(
   '/' => Public,
-  '/api' => Api
+  '/auth' => Auth
 )

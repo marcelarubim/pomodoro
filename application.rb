@@ -2,70 +2,34 @@ require 'sinatra/base'
 require 'sinatra/activerecord'
 require 'sinatra/reloader'
 require 'dotenv'
+
 require './config/environments'
-require './models/user'
-require './models/session'
-
-module ApiError
-  JWT_EXCEPTIONS = [
-    JWT::DecodeError, JWT::ExpiredSignature, JWT::ImmatureSignature,
-    JWT::IncorrectAlgorithm, JWT::InvalidAudError, JWT::InvalidIatError,
-    JWT::InvalidIssuerError, JWT::InvalidJtiError, JWT::InvalidSubError,
-    JWT::VerificationError
-  ].freeze
-end
-
-class JwtAuth
-  def initialize(app)
-    @app = app
-  end
-
-  def call(env)
-    payload, _header = decode_token(env)
-    %i[scopes user_id].each { |k| env[k] = payload[k.to_s] }
-    @app.call env
-  rescue *ApiError::JWT_EXCEPTIONS => e
-    [403, { 'Content-Type' => 'application/json' },
-     [{ error: e.class.to_s, message: e.message }.to_json]]
-  end
-
-  def decode_token(env)
-    options = { algorithm: 'HS256',
-                iss: ENV['JWT_ISSUER'],
-                aud: ENV['JWT_AUDIENCE'] }
-    bearer = env.fetch('HTTP_AUTHORIZATION', '').slice(7..-1)
-    JWT.decode bearer, ENV['JWT_SECRET'], true, options
-  end
-end
+require_relative 'models/user'
+require_relative 'models/session'
+require_relative 'helpers'
 
 class Api < Sinatra::Base
   configure :development do
     register Sinatra::Reloader
     Dotenv.load
   end
+  helpers Sinatra::Helpers
+  before { json_body }
+end
 
-  use JwtAuth
+class Auth < Api
   before do
-    begin
-      if request.body.read(1)
-        request.body.rewind
-        @request_body = JSON.parse request.body.read, symbolize_names: true
-      end
-    rescue JSON::ParserError => e
-      request.body.rewind
-      [401, { 'Content-Type' => 'application/json' },
-       [{ error: e.class.to_s, message: e.message }.to_json]]
-    end
+    authenticate!
   end
 
   get '/user/:username' do
-    process_request request, 'view_session', params['username'] do |req|
+    process_request request, 'view_session', params['username'] do |_req|
       { user: @user.username, message: 'get' }.to_json
     end
   end
 
   post '/user/:username/sessions/new' do
-    process_request request, 'add_session', params['username'] do |req|
+    process_request request, 'add_session', params['username'] do |_req|
       new_session = Session.new(title: @request_body[:title],
                                 start: @request_body[:start],
                                 final: @request_body[:final])
@@ -77,79 +41,42 @@ class Api < Sinatra::Base
       end
     end
   end
-
-  def process_request(req, scope, username)
-    scopes, user_id = request.env.values_at :scopes, :user_id
-    @user = User.find_by(username: username)
-    if (scopes.include?(scope) || scopes.include?('admin')) &&
-       @user&.id == user_id
-      yield req
-    else
-      halt 403
-    end
-  end
 end
 
-class Public < Sinatra::Base
-  configure :development do
-    register Sinatra::Reloader
-    Dotenv.load
-  end
-
-  before do
-    begin
-      if request.body.read(1)
-        request.body.rewind
-        @request_payload = JSON.parse request.body.read, symbolize_names: true
-      end
-    rescue JSON::ParserError => e
-      request.body.rewind
-    end
-  end
-
+class Public < Api
   get '/' do
     { message: 'Tomato Api' }.to_json
   end
 
   post '/register' do
-    @user = User.new(email: @request_payload[:email],
-                     username: @request_payload[:username],
-                     password: @request_payload[:password])
-                     # role: @request_payload[:role])
-    if @user.save
+    @user = User.new(email: @request_body[:email],
+                     username: @request_body[:username],
+                     password: @request_body[:password],
+                     role: @request_body[:role] || nil)
+    token = token(@user.username, @user.role_authorization)
+    if token && @user.save
       { message: 'User created',
-        token: token(@user.username, @user.role_authorization) }.to_json
+        access_token: token,
+        token_type: 'Bearer' }.to_json
     else
       halt 401, { error: @user.errors.full_messages }.to_json
     end
   end
 
   post '/signin' do
-    @user = if @request_payload[:login]&.include? '@'
-              User.find_by(email: @request_payload[:login])
+    @user = if @request_body[:login]&.include? '@'
+              User.find_by(email: @request_body[:login])
             else
-              User.find_by(username: @request_payload[:login])
+              User.find_by(username: @request_body[:login])
             end
-    if @user.hash == @request_payload[:password]
-      halt 200, { token: token(@user.id, @user.role_authorization),
+    if @user.hash == @request_body[:password]
+      halt 200, { access_token: token(@user.id, @user.role_authorization, 0),
+                  # id_token: token(@user.id, @user.role_authorization, 1),
+                  # refresh_token: token(@user.id, @user.role_authorization, 2),
+                  token_type: 'Bearer',
                   message: 'User signed in' }.to_json
     else
       halt 401, { error: 'Login credentials are not valid' }.to_json
     end
-  end
-
-  def token(user_id, scopes)
-    JWT.encode access_payload(user_id, scopes), ENV['JWT_SECRET'], 'HS256'
-  end
-
-  def access_payload(user_id, scopes)
-    {
-      exp: Time.now.to_i + 60 * 60,
-      iat: Time.now.to_i,
-      iss: ENV['JWT_ISSUER'],
-      aud: request.url.gsub(request.fullpath, ''),
-      scopes: scopes, # ['view_session', 'add_session', 'view_stats']
-      user_id: user_id
-    }
   end
 end
