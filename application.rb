@@ -17,32 +17,6 @@ class Api < Sinatra::Base
   before { json_body }
 end
 
-class Auth < Api
-  before do
-    authenticate!
-  end
-
-  get '/user/:username' do
-    process_request request, 'view_session', params['username'] do |_req|
-      { user: @user.username, message: 'get' }.to_json
-    end
-  end
-
-  post '/user/:username/sessions/new' do
-    process_request request, 'add_session', params['username'] do |_req|
-      new_session = Session.new(title: @request_body[:title],
-                                start: @request_body[:start],
-                                final: @request_body[:final])
-      @user.sessions << new_session
-      if @user.save
-        { user: @user.username, message: 'post' }.to_json
-      else
-        halt 401, new_session.errors.full_messages
-      end
-    end
-  end
-end
-
 class Public < Api
   get '/' do
     { message: 'Tomato Api' }.to_json
@@ -53,11 +27,13 @@ class Public < Api
                      username: @request_body[:username],
                      password: @request_body[:password],
                      role: @request_body[:role] || nil)
-    token = token(@user)
-    if token && @user.save
-      { message: 'User created',
-        access_token: token,
-        token_type: 'Bearer' }.to_json
+    access_token = token(@user, grant_type: 'access_token')
+    if access_token && @user.save
+      halt 200, { access_token: access_token,
+                  expires_in: ENV['ACC_TOK_EXP'],
+                  scopes: @user.scopes,
+                  token_type: 'Bearer',
+                  message: 'User created' }.to_json
     else
       halt 401, { error: @user.errors.full_messages }.to_json
     end
@@ -70,9 +46,10 @@ class Public < Api
               User.find_by(username: @request_body[:login])
             end
     if @user.hash == @request_body[:password]
-      halt 200, { access_token: token(@user, grant_type: 'access_token'),
-                  # id_token: token(@user.id, @user.role_authorization, 1),
-                  # refresh_token: token(@user.id, @user.role_authorization, 2),
+      access_token = token(@user, grant_type: 'access_token')
+      halt 200, { access_token: access_token,
+                  expires_in: ENV['ACC_TOK_EXP'],
+                  scopes: @user.scopes,
                   token_type: 'Bearer',
                   message: 'User signed in' }.to_json
     else
