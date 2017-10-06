@@ -11,4 +11,5 @@ require './application'
 run Rack::URLMap.new(
   '/' => Public,
   '/auth' => Auth
+  '/user' => UserController
 )

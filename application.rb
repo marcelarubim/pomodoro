@@ -53,7 +53,7 @@ class Public < Api
                      username: @request_body[:username],
                      password: @request_body[:password],
                      role: @request_body[:role] || nil)
-    token = token(@user.username, @user.role_authorization)
+    token = token(@user)
     if token && @user.save
       { message: 'User created',
         access_token: token,
@@ -63,20 +63,44 @@ class Public < Api
     end
   end
 
-  post '/signin' do
+  post '/authorize' do
     @user = if @request_body[:login]&.include? '@'
               User.find_by(email: @request_body[:login])
             else
               User.find_by(username: @request_body[:login])
             end
     if @user.hash == @request_body[:password]
-      halt 200, { access_token: token(@user.id, @user.role_authorization, 0),
+      halt 200, { access_token: token(@user, grant_type: 'access_token'),
                   # id_token: token(@user.id, @user.role_authorization, 1),
                   # refresh_token: token(@user.id, @user.role_authorization, 2),
                   token_type: 'Bearer',
                   message: 'User signed in' }.to_json
     else
       halt 401, { error: 'Login credentials are not valid' }.to_json
+    end
+  end
+end
+
+class UserController < Api
+  get '/:username' do
+    authenticate!
+    process_request request, 'view_session' do |_req|
+      { user: @user.username, message: 'get' }.to_json
+    end
+  end
+
+  post '/:username/sessions/new' do
+    authenticate!
+    process_request request, 'add_session' do |_req|
+      new_session = Session.new(title: @request_body[:title],
+                                start: @request_body[:start],
+                                final: @request_body[:final])
+      @user.sessions << new_session
+      if @user.save
+        { user: @user.username, message: 'post' }.to_json
+      else
+        halt 401, new_session.errors.full_messages
+      end
     end
   end
 end

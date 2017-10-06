@@ -37,7 +37,7 @@ class User < ActiveRecord::Base
     BCrypt::Password.new(password_hash)
   end
 
-  def role_authorization
+  def scopes
     if role == 'admin'
       ['admin']
     elsif role == 'free'
