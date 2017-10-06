@@ -5,7 +5,6 @@ require 'dotenv'
 require './config/environments'
 require './models/user'
 require './models/session'
-# require './helper'
 
 class JwtAuth
   def initialize(app)
@@ -27,22 +26,31 @@ class JwtAuth
   end
 
   def call(env)
-    options = { algorithm: 'HS256', iss: ENV['JWT_ISSUER'] }
+    options = {
+      algorithm: 'HS256',
+      iss: ENV['JWT_ISSUER'],
+      aud: ENV['JWT_AUDIENCE']
+    }
     bearer = env.fetch('HTTP_AUTHORIZATION', '').slice(7..-1)
     payload, header = JWT.decode bearer, ENV['JWT_SECRET'], true, options
     env[:scopes] = payload['scopes']
-    env[:user] = payload['user']
+    env[:user_id] = payload['user_id']
     @app.call env
-  rescue JWT::ExpiredSignature
-    [403, { 'Content-Type' => 'text/plain' }, ['The token has expired.']]
-  rescue JWT::InvalidIssuerError
-    [403, { 'Content-Type' => 'text/plain' },
-     ['The token does not have a valid issuer.']]
-  rescue JWT::InvalidIatError
-    [403, { 'Content-Type' => 'text/plain' },
-     ['The token does not have a valid "issued at" time.']]
-  rescue JWT::DecodeError
-    [401, { 'Content-Type' => 'text/plain' }, ['A token must be passed.']]
+  rescue JWT::ExpiredSignature => e
+    [403, { 'Content-Type' => 'application/json' },
+     [{ error: e.class.to_s, message: e.message }.to_json]]
+  rescue JWT::InvalidIssuerError => e
+    [403, { 'Content-Type' => 'application/json' },
+     [{ error: e.class.to_s, message: e.message }.to_json]]
+  rescue JWT::InvalidIatError => e
+    [403, { 'Content-Type' => 'application/json' },
+     [{ error: e.class.to_s, message: e.message }.to_json]]
+  rescue JWT::InvalidAudError => e
+    [403, { 'Content-Type' => 'application/json' },
+     [{ error: e.class.to_s, message: e.message }.to_json]]
+  rescue JWT::DecodeError => e
+    [401, { 'Content-Type' => 'application/json' },
+     [{ error: e.class.to_s, message: e.message }.to_json]]
   end
 end
 
