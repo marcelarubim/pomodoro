@@ -7,11 +7,12 @@ class User < ActiveRecord::Base
   attr_accessor :password
 
   validates_uniqueness_of :email, :username, case_sensitive: false
-  validates_presence_of :email, :username, :password
+  validates_presence_of :email, :username
   validates :username, length: { minimum: 3 }
   validate :validate_email
   validate :validate_username
-  validates :password, length: { in: 6..20 }
+  validates :password, length: { in: 6..20 }, allow_blank: true
+  validates_presence_of :password, if: ->(obj) { obj.new_record? }
   enum role: %w[admin free premium]
   has_many :sessions
 
