@@ -47,7 +47,10 @@ class Public < Api
               User.find_by(username: @request_body[:login])
             end
     if @user.hash == @request_body[:password]
-      access_token = token(@user, grant_type: 'access_token')
+      aud = request.base_url
+      access_token = Token.create(user: @user,
+                                  grant_type: 'access_token',
+                                  aud: aud)
       halt 200, { access_token: access_token,
                   expires_in: ENV['ACC_TOK_EXP'],
                   scopes: @user.scopes,
@@ -60,10 +63,35 @@ class Public < Api
 end
 
 class UserController < Api
+  get '/me' do
+    authenticate!
+    halt 200, { email: @user.email,
+                username: @user.username,
+                message: 'get' }.to_json
+  end
+
+  put '/me' do
+    authenticate!
+    if @user.update(@request_body)
+      { user: @user.attributes, message: 'post' }.to_json
+    else
+      halt 401, new_session.errors.full_messages
+    end
+  end
+
+  put '/me/password' do
+    authenticate!
+    if @user.update(@request_body)
+      { user: @user.attributes, message: 'post' }.to_json
+    else
+      halt 401, new_session.errors.full_messages
+    end
+  end
+
   get '/:username' do
     authenticate!
     process_request request, 'view_session' do |_req|
-      { user: @user.username, message: 'get' }.to_json
+      halt 200, { user: @user.username, message: 'get' }.to_json
     end
   end
 
