@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20170927180239) do
+ActiveRecord::Schema.define(version: 20171007142222) do
 
   create_table "sessions", force: :cascade do |t|
     t.string "title"
@@ -22,11 +22,28 @@ ActiveRecord::Schema.define(version: 20170927180239) do
     t.index ["user_id"], name: "index_sessions_on_user_id"
   end
 
+  create_table "tokens", force: :cascade do |t|
+    t.string "token"
+    t.string "aud"
+    t.integer "grant_type", default: 0
+    t.string "blacklist", default: "f"
+    t.integer "user_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id"], name: "index_tokens_on_user_id"
+  end
+
   create_table "users", force: :cascade do |t|
     t.string "username"
     t.string "email"
     t.string "password_hash"
     t.integer "role"
+    t.boolean "blocked"
+    t.boolean "email_verified"
+    t.string "last_ip"
+    t.datetime "last_login"
+    t.integer "logins_count"
+    t.string "timezone"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end
