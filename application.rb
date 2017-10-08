@@ -28,10 +28,12 @@ class Public < Api
                      username: @request_body[:username],
                      password: @request_body[:password],
                      role: @request_body[:role] || nil)
-    access_token = token(@user, grant_type: 'access_token')
+    access_token = Token.create(user: @user,
+                                grant_type: 'access_token',
+                                aud: aud)
     if access_token && @user.save
       halt 200, { access_token: access_token,
-                  expires_in: ENV['ACC_TOK_EXP'],
+                  expires_in: access_token.expiration,
                   scopes: @user.scopes,
                   token_type: 'Bearer',
                   message: 'User created' }.to_json
@@ -52,7 +54,7 @@ class Public < Api
                                   grant_type: 'access_token',
                                   aud: aud)
       halt 200, { access_token: access_token,
-                  expires_in: ENV['ACC_TOK_EXP'],
+                  expires_in: access_token.expiration,
                   scopes: @user.scopes,
                   token_type: 'Bearer',
                   message: 'User signed in' }.to_json

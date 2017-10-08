@@ -4,7 +4,7 @@ class CreateTokens < ActiveRecord::Migration[5.1]
       t.string :token
       t.string :aud
       t.integer :grant_type, default: 0
-      t.string :blacklist, default: false
+      t.boolean :blacklist, default: 0
       t.references :user, foreign_key: true
       t.timestamps
     end

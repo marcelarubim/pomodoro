@@ -5,11 +5,7 @@ module Sinatra
   module Helpers
     def authenticate!
       @payload, _header = decode_token!
-      # validate_token(@payload)
-      raise JWT::VerificationError, 'User not authorized' if
-        @payload['user_id'] != @user.id
-      raise JWT::VerificationError, 'Invalid scope' if
-        @user.scopes.include?(@payload['scope'])
+      validate_token!
     rescue *ApiError::JWT_EXCEPTIONS => e
       halt 403, { error: e.class.to_s, message: e.message }.to_json
     end
@@ -19,13 +15,31 @@ module Sinatra
       Token.decode(bearer)
     end
 
-    def validate_token(payload)
-      # if Token.find(payload['token_id']).user
+    def validate_token!
+      token_errors!
+      authorization_errors!
+    rescue ActiveRecord::RecordNotFound => e
+      halt 404, { error: e.class.to_s, message: e.message }.to_json
+    rescue *ApiError::JWT_EXCEPTIONS => e
+      halt 403, { error: e.class.to_s, message: e.message }.to_json
     end
 
-    def current_user
-      # request.url.gsub(request.fullpath, '')
-      # request.path.start_with?('/user/me')
+    def token_errors!
+      raise JWT::VerificationError, 'Invalid token' if
+        Token.find(@payload['token_id']).blacklist
+    end
+
+    def authorization_errors!
+      current_user!
+      return if request.path == '/user/me' ||
+                request.path.start_with?('/user/me/')
+      raise JWT::VerificationError, 'User not authorized' if
+        @payload['user_id'] != @user&.id
+      raise JWT::VerificationError, 'Invalid scope' if
+        @user.scopes.include?(@payload['scope'])
+    end
+
+    def current_user!
       @user = if params.key?(:username)
                 User.find_by(username: params[:username])
               elsif !@request_body.nil? && @request_body.key?('id')

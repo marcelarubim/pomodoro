@@ -26,7 +26,7 @@ ActiveRecord::Schema.define(version: 20171007142222) do
     t.string "token"
     t.string "aud"
     t.integer "grant_type", default: 0
-    t.string "blacklist", default: "f"
+    t.boolean "blacklist", default: false
     t.integer "user_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
