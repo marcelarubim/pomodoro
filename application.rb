@@ -4,10 +4,6 @@ require 'sinatra/reloader'
 require 'dotenv/load'
 
 require './config/environments'
-require_relative 'models/user'
-require_relative 'models/session'
-require_relative 'models/token'
-require_relative 'helpers'
 
 class Api < Sinatra::Base
   configure :development do
