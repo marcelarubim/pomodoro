@@ -1,5 +1,4 @@
 require 'bcrypt'
-
 # .nodoc. #
 class User < ActiveRecord::Base
   include BCrypt
@@ -11,7 +10,7 @@ class User < ActiveRecord::Base
   validates :username, length: { minimum: 3 }
   validate :validate_email
   validate :validate_username
-  validates :password, length: { in: 6..20 }, allow_blank: true
+  validates :password, length: { in: 8..55 }, allow_blank: true
   validates_presence_of :password, if: ->(obj) { obj.new_record? }
   enum role: %w[admin free premium]
   has_many :sessions
@@ -45,6 +44,10 @@ class User < ActiveRecord::Base
     elsif role == 'premium'
       %w[view_session add_session view_stats]
     end
+  end
+
+  def self.public_params(params)
+    params.slice(:username, :email, :email_verified, :timezone)
   end
 
   private

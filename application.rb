@@ -39,7 +39,7 @@ class Public < Api
   end
 
   post '/authorize' do
-    @user = if @request_body[:login]&.include? '@'
+    @user = if email?(@request_body[:login])
               User.find_by(email: @request_body[:login])
             else
               User.find_by(username: @request_body[:login])
@@ -70,7 +70,7 @@ class UserController < Api
 
   put '/me' do
     authenticate!
-    if @user.update(@request_body)
+    if @user.update(User.public_params(@request_body))
       { user: @user.attributes, message: 'post' }.to_json
     else
       halt 401, new_session.errors.full_messages
