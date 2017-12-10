@@ -10,13 +10,18 @@ class User < ActiveRecord::Base
   validates :username, length: { minimum: 3 }
   validate :validate_email
   validate :validate_username
-  validates :password, length: { in: 8..55 }, allow_blank: true
-  validates_presence_of :password, if: ->(obj) { obj.new_record? }
+  validates :password, length: { in: 8..55 },
+                       presence: true,
+                       on: :create
+  validates :password, length: { in: 8..55 },
+                       allow_blank: true,
+                       on: :update
   enum role: %w[admin free premium]
   has_many :sessions
 
   before_validation do
     self.username ||= email
+    validate_password unless password.nil?
   end
 
   before_save do
@@ -60,6 +65,11 @@ class User < ActiveRecord::Base
   def validate_username
     return if username =~ /\A\w+\z/ || username == email
     errors[:username] << 'invalid characteres'
+  end
+
+  def validate_password
+    return unless password.downcase.include?(username.downcase)
+    errors[:password] << 'contain username information'
   end
 
   def encrypt_password
