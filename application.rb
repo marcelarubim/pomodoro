@@ -3,8 +3,6 @@ require 'sinatra/activerecord'
 require 'sinatra/reloader'
 require 'dotenv/load'
 
-require './config/environments'
-
 class Api < Sinatra::Base
   configure :development do
     register Sinatra::Reloader
@@ -24,6 +22,7 @@ class Public < Api
                      username: @request_body[:username],
                      password: @request_body[:password],
                      role: @request_body[:role] || nil)
+    aud = request.base_url
     access_token = Token.create(user: @user,
                                 grant_type: 'access_token',
                                 aud: aud)
