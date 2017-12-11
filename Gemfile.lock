@@ -13,16 +13,20 @@ GEM
       minitest (~> 5.1)
       tzinfo (~> 1.1)
     arel (8.0.0)
-    backports (3.8.0)
+    backports (3.10.3)
     bcrypt (3.1.11)
     bond (0.5.1)
     concurrent-ruby (1.0.5)
     dotenv (2.2.1)
-    i18n (0.8.6)
-    json (2.0.2)
-    jwt (2.0.0)
+    i18n (0.9.1)
+      concurrent-ruby (~> 1.0)
+    json (2.1.0)
+    jwt (2.1.0)
+    mail (2.7.0)
+      mini_mime (>= 0.1.1)
+    mini_mime (1.0.0)
     minitest (5.10.3)
-    multi_json (1.12.1)
+    multi_json (1.12.2)
     mustermann (1.0.1)
     pg (0.21.0)
     rack (2.0.3)
@@ -30,7 +34,7 @@ GEM
       rack
     rack-test (0.6.3)
       rack (>= 1.0)
-    rake (12.1.0)
+    rake (12.3.0)
     ripl (0.7.1)
       bond (~> 0.5.1)
     ripl-multi_line (0.3.1)
@@ -64,7 +68,7 @@ GEM
       ripl-multi_line (>= 0.2.4)
       ripl-rack (>= 0.2.0)
       sinatra (>= 1.2.1)
-    tzinfo (1.2.3)
+    tzinfo (1.2.4)
       thread_safe (~> 0.1)
 
 PLATFORMS
@@ -76,6 +80,7 @@ DEPENDENCIES
   dotenv
   json
   jwt
+  mail
   pg
   rake
   sinatra

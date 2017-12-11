@@ -13,6 +13,7 @@ gem 'pg', group: :production
 gem 'rake'
 gem 'sinatra-activerecord'
 gem 'sinatra-reloader'
+gem 'mail'
 
 group :development, :test do
   gem 'sqlite3'

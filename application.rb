@@ -2,6 +2,7 @@ require 'sinatra/base'
 require 'sinatra/activerecord'
 require 'sinatra/reloader'
 require 'dotenv/load'
+require 'mail'
 
 class Api < Sinatra::Base
   configure :development do
@@ -27,6 +28,7 @@ class Public < Api
                                 grant_type: 'access_token',
                                 aud: aud)
     if access_token && @user.save
+      send_register_email(access_token.token)
       halt 200, { access_token: access_token,
                   expires_in: access_token.expiration,
                   scopes: @user.scopes,
