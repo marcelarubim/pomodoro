@@ -1,4 +1,5 @@
 require 'bcrypt'
+
 # .nodoc. #
 class User < ActiveRecord::Base
   include BCrypt
@@ -18,6 +19,7 @@ class User < ActiveRecord::Base
                        on: :update
   enum role: %w[admin free premium]
   has_many :sessions
+  has_many :tokens
 
   before_validation do
     self.username ||= email
@@ -76,4 +78,5 @@ class User < ActiveRecord::Base
     return unless password.present?
     self.password_hash = BCrypt::Password.create(password)
   end
+
 end

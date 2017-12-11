@@ -38,8 +38,8 @@ ActiveRecord::Schema.define(version: 20171007142222) do
     t.string "email"
     t.string "password_hash"
     t.integer "role"
-    t.boolean "blocked"
-    t.boolean "email_verified"
+    t.boolean "blocked", default: false
+    t.boolean "email_verified", default: false
     t.string "last_ip"
     t.datetime "last_login"
     t.integer "logins_count"
